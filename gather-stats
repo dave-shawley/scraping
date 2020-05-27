@@ -1,0 +1,8 @@
+#!/usr/bin/env zsh
+url=https://www.177milkstreet.com/recipes/maple-whiskey-pudding-cakes
+for ((ctr=0; $ctr<${1:-20}; ctr=$ctr+1))
+do
+	printf " $ctr"
+	time (./scrape "$url" /dev/null 2>&1) >/dev/null
+done 2>data
+echo ' done.'

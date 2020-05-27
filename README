@@ -1,0 +1,25 @@
+Web scraping in a few languages
+===============================
+I needed a quick script to scrape a recipe from 177milkstreet.com into a
+simple HTML document.  Their document format is CSS based so I needed
+a library that understands HTML and CSS selectors as well as something
+to retrieve the contents via HTTP.  I am a Python developer so it was
+the first tool that I reached for -- Python + requests + BeautifulSoup.
+In about 30 minutes I had a working script.
+
+That is nothing special... *so why this repo?*  I haven't written C++ in
+a few years so I wanted to see what web scraping would feel like in a
+compiled language.  After locating a library capable of scraping (lexbor),
+it really didn't take too long to write something that does the same job.
+
+| Language  | SLOC  | user  | sys   | cpu   | total |
+|-----------|:-----:|-------|-------|-------|-------|
+| Python    | 75    | 0.266 | 0.030 | 75.90%| 0.387 |
+| C++       | 395   | 0.037 | 0.010 | 33.46%| 0.135 |
+
+The timings are no where near scientific.  I ran the script 20 times
+using zsh's time builtin, dropped the highest and lowest and calculated
+the simple average.  Not too mention that this is also subject to the
+relative lack of precision in the time built-in.  So make what you will
+of the numbers.  Not surprising that a C++ binary is faster and less
+resource hungry than a Python script.

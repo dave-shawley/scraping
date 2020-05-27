@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+
+data = [line.strip().split() for line in open('data').readlines()]
+data = [[float(elm.rstrip('s%')) for elm in row[-8::2]] for row in data]
+targets = (min(row[-1] for row in data), max(row[-1] for row in data))
+
+sums = [0.0, 0.0, 0.0, 0.0]
+skipped_min, skipped_max = False, False
+for row in data:
+    if not skipped_min and row[-1] == targets[0]:
+        skipped_min = True
+    elif not skipped_max and row[-1] == targets[1]:
+        skipped_max = True
+    else:
+        for i, d in enumerate(row):
+            sums[i] += row[i]
+
+npts = len(data) - 2
+print('%.3f %.3f %.2f%% %.3f' % tuple(s /npts for s in sums))
