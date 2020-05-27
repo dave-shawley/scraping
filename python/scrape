@@ -1,0 +1,89 @@
+#!/usr/bin/env python
+import argparse
+import dataclasses
+import logging
+import typing
+
+import bs4
+import requests
+
+
+@dataclasses.dataclass
+class Ingredient:
+    quantity: str
+    label: str
+
+
+@dataclasses.dataclass
+class Recipe:
+    title: str
+    url: str
+    ingredients: typing.List[Ingredient] = dataclasses.field(
+        default_factory=list)
+    instructions: typing.List[str] = dataclasses.field(default_factory=list)
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('url', metavar='URL', type=str, help='the URL to scrape')
+parser.add_argument('output',
+                    metavar='OUTPUT',
+                    type=argparse.FileType('w'),
+                    help='place output in this file')
+parser.add_argument('--verbose',
+                    '-v',
+                    action='store_true',
+                    help='enable diagnostic output')
+opts = parser.parse_args()
+logging.basicConfig(level=logging.DEBUG if opts.verbose else logging.INFO,
+                    format='%(levelname)1.1s %(name)s: %(message)s')
+
+logger = logging.getLogger('scrape')
+logger.info('retrieving page from %s', opts.url)
+rsp = requests.get(opts.url)
+rsp.raise_for_status()
+
+logger.info('parsing response data (%d bytes)', len(rsp.text))
+soup = bs4.BeautifulSoup(rsp.text, features='html.parser')
+content = soup.find(class_='recipe__text__content')
+
+recipe = Recipe(
+    title=soup.find('h1', class_='recipe-header__title').text,
+    url=opts.url,
+)
+logger.debug('found recipe %s', recipe.title)
+
+parent = content.find('ul', class_='ingredients-list')
+for ingredient in parent.find_all('li', class_='ingredient'):
+    recipe.ingredients.append(
+        Ingredient(
+            ingredient.find(class_='ingredient__quantity').text,
+            ingredient.find(class_='ingredient__label').text))
+logger.debug('found %d ingredients', len(recipe.ingredients))
+
+parent = content.find('ol', class_='recipe__directions__list')
+for direction in parent.find_all('div', class_='recipe__direction__text'):
+    recipe.instructions.append(direction.text)
+logger.debug('found %d instructions', len(recipe.instructions))
+
+logger.info('writing output to %s', opts.output.name)
+opts.output.write('<html><head><title>')
+opts.output.write(recipe.title)
+opts.output.write('</title><meta charset=utf-8></head><body>')
+opts.output.write('<h1>')
+opts.output.write(recipe.title)
+opts.output.write('</h1>')
+opts.output.write('<h2>Ingredients</h2><table>')
+for ingredient in recipe.ingredients:
+    opts.output.write('<tr><td>')
+    opts.output.write(ingredient.quantity)
+    opts.output.write('</td><td>')
+    opts.output.write(ingredient.label)
+    opts.output.write('</td></tr>')
+opts.output.write('</table><h2>Directions</h2><ol>')
+for instruction in recipe.instructions:
+    opts.output.write('<li>')
+    opts.output.write(instruction)
+    opts.output.write('</li>')
+opts.output.write('</ol><p><i>Extracted from ')
+opts.output.write(opts.url)
+opts.output.write('</i></p></body></html>')
